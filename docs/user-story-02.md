@@ -7,5 +7,5 @@
 
 **Acceptance Criteria:**
 - Duck is composed of head, body, two feet, and a tail.
-- All parts use basic Three.js geometry classes (Box, Sphere, Cylinder, etc.).
+- All parts use basic Three.js geometry classes (lines.).
 - No textures or advanced materials are applied.

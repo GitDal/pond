@@ -3,6 +3,7 @@
   import * as THREE from "three";
   import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
   import { createPlane } from "../three/create-plane";
+  import Keyboard from "./keyboard.svelte";
 
   let canvasContainer: HTMLDivElement;
 
@@ -23,6 +24,11 @@
   let lineMaterial: THREE.LineBasicMaterial;
   let planeGeometry: THREE.PlaneGeometry;
   let planeMaterial: THREE.MeshBasicMaterial;
+
+  let upKeyDown = false;
+  let leftKeyDown = false;
+  let downKeyDown = false;
+  let rightKeyDown = false;
 
   onMount(() => {
     clock = new THREE.Clock();
@@ -97,6 +103,15 @@
       animationFrameId = requestAnimationFrame(animate);
 
       // put animation logic here
+      const delta = clock.getDelta();
+      const rotationSpeed = 0.05; // Speed of rotation
+
+      if (leftKeyDown && !rightKeyDown && headLine.rotation.y < Math.PI / 2) {
+        headLine.rotation.y += (1 + rotationSpeed) * delta;
+      }
+      if (rightKeyDown && !leftKeyDown && headLine.rotation.y > -Math.PI / 2) {
+        headLine.rotation.y -= (1 + rotationSpeed) * delta;
+      }
 
       renderer.render(scene, camera);
     };
@@ -114,11 +129,46 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
       }
     };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "ArrowUp") {
+        upKeyDown = true;
+      }
+      if (event.key === "ArrowLeft") {
+        leftKeyDown = true;
+      }
+      if (event.key === "ArrowDown") {
+        downKeyDown = true;
+      }
+      if (event.key === "ArrowRight") {
+        rightKeyDown = true;
+      }
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.key === "ArrowUp") {
+        upKeyDown = false;
+      }
+      if (event.key === "ArrowLeft") {
+        leftKeyDown = false;
+      }
+      if (event.key === "ArrowDown") {
+        downKeyDown = false;
+      }
+      if (event.key === "ArrowRight") {
+        rightKeyDown = false;
+      }
+    };
+
     window.addEventListener("resize", handleResize);
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
 
     return () => {
       console.log("Cleaning up Three.js scene...");
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
       cancelAnimationFrame(animationFrameId);
 
       // Cleanup?
@@ -147,14 +197,34 @@
 </script>
 
 <div
+  class="container"
   bind:this={canvasContainer}
   style="width: 100vw; height: 100vh; overflow: hidden;"
 ></div>
+<div class="debug-container">
+  <Keyboard
+    isUpPressed={upKeyDown}
+    isLeftPressed={leftKeyDown}
+    isDownPressed={downKeyDown}
+    isRightPressed={rightKeyDown}
+  />
+</div>
 
 <style>
-  div {
+  .container {
     margin: 0;
     padding: 0;
     display: block;
+  }
+
+  .debug-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 10px;
+    font-family: monospace;
   }
 </style>

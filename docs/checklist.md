@@ -5,8 +5,8 @@
   *Render duck using only lines to focus on movement logic.*
 
 ## Geometry Modeling
-- [ ] **2.** Create a Duck Model Using Only Geometries  
-  *Use Box, Sphere, or Cylinder geometry only – no textures.*
+- [✅] **2.** Create a Duck Model Using Only Geometries  
+  *Use line geometry only – no textures.*
 
 ## Movement Behaviors
 - [ ] **3.** Implement Head Movement Ahead of Body When Running  
