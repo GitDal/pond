@@ -30,6 +30,8 @@
   let downKeyDown = false;
   let rightKeyDown = false;
 
+  let angleDiff = 0;
+
   onMount(() => {
     clock = new THREE.Clock();
 
@@ -60,42 +62,58 @@
     planeMaterial = planeMat;
     scene.add(plane);
 
-    const bodyVertices = new Float32Array([
-      ...[0.0, 0.5, 0.0],
-      ...[0.0, 0.5, 1.0],
+    const fullLenght = new Float32Array([
+      ...[0.0, 0.0, -0.5],
+      ...[0.0, 0.0, 0.5],
     ]);
-    const headVertices = new Float32Array([
-      ...[0.0, 0.75, -0.25],
-      ...[0.0, 0.75, 0.25],
+
+    const halfLength = new Float32Array([
+      ...[0.0, 0.0, -0.25],
+      ...[0.0, 0.0, 0.25],
     ]);
-    const tailVertices = new Float32Array([
-      ...[0.0, 0.4, 1.0],
-      ...[0.0, 0.35, 1.25],
-    ]);
-    const leftFootVertices = new Float32Array([
-      ...[-0.25, 0.0, 0.5],
-      ...[-0.25, 0.0, 0.75],
-    ]);
-    const rightFootVertices = new Float32Array([
-      ...[0.25, 0.0, 0.5],
-      ...[0.25, 0.0, 0.75],
+
+    const quarterLength = new Float32Array([
+      ...[0.0, 0.0, -0.125],
+      ...[0.0, 0.0, 0.125],
     ]);
 
     lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
 
-    bodyLine = createLine(bodyVertices, lineMaterial);
-    headLine = createLine(headVertices, lineMaterial);
-    tailLine = createLine(tailVertices, lineMaterial);
-    leftFootLine = createLine(leftFootVertices, lineMaterial);
-    rightFootLine = createLine(rightFootVertices, lineMaterial);
+    bodyLine = createLine(
+      fullLenght,
+      lineMaterial,
+      new THREE.Vector3(0, 0.35, 0),
+    );
+    headLine = createLine(
+      halfLength,
+      lineMaterial,
+      new THREE.Vector3(0, 0.55, -0.5),
+    );
+    rightFootLine = createLine(
+      quarterLength,
+      lineMaterial,
+      new THREE.Vector3(0.125, 0, 0.25),
+    );
+
+    leftFootLine = createLine(
+      quarterLength,
+      lineMaterial,
+      new THREE.Vector3(-0.125, 0, 0.25),
+    );
+
+    tailLine = createLine(
+      quarterLength,
+      lineMaterial,
+      new THREE.Vector3(0, 0.3, 0.5),
+    );
+    tailLine.rotateX(Math.PI / 6);
 
     const duckGroup = new THREE.Group();
-
     duckGroup.add(bodyLine);
     duckGroup.add(headLine);
-    duckGroup.add(tailLine);
-    duckGroup.add(leftFootLine);
     duckGroup.add(rightFootLine);
+    duckGroup.add(leftFootLine);
+    duckGroup.add(tailLine);
     scene.add(duckGroup);
 
     // 7. Animation Loop
@@ -112,6 +130,8 @@
       if (rightKeyDown && !leftKeyDown && headLine.rotation.y > -Math.PI / 2) {
         headLine.rotation.y -= (1 + rotationSpeed) * delta;
       }
+
+      angleDiff = headLine.rotation.y - bodyLine.rotation.y;
 
       renderer.render(scene, camera);
     };
@@ -171,10 +191,13 @@
       window.removeEventListener("keyup", handleKeyUp);
       cancelAnimationFrame(animationFrameId);
 
-      // Cleanup?
-      // planeGeometry?.dispose();
-      // planeMaterial?.dispose();
-      // lineMaterial?.dispose();
+      bodyLine.geometry.dispose();
+      headLine.geometry.dispose();
+      rightFootLine.geometry.dispose();
+      leftFootLine.geometry.dispose();
+      tailLine.geometry.dispose();
+
+      lineMaterial.dispose();
 
       // Dispose of renderer and remove canvas
       if (renderer) {
@@ -189,10 +212,13 @@
   function createLine(
     vertices: Float32Array,
     material: THREE.Material,
+    position: THREE.Vector3,
   ): THREE.Line {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
-    return new THREE.Line(geometry, material);
+    const line = new THREE.Line(geometry, material);
+    line.position.copy(position);
+    return line;
   }
 </script>
 
@@ -202,6 +228,7 @@
   style="width: 100vw; height: 100vh; overflow: hidden;"
 ></div>
 <div class="debug-container">
+  <div>angle head2body: {angleDiff}</div>
   <Keyboard
     isUpPressed={upKeyDown}
     isLeftPressed={leftKeyDown}
