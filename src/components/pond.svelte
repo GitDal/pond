@@ -19,6 +19,7 @@
   let leftFootLine: THREE.Line;
   let rightFootLine: THREE.Line;
   let tailLine: THREE.Line;
+  let duckGroup: THREE.Group;
 
   // Geometries and Materials (to dispose later)
   let lineMaterial: THREE.LineBasicMaterial;
@@ -29,8 +30,6 @@
   let leftKeyDown = false;
   let downKeyDown = false;
   let rightKeyDown = false;
-
-  let angleDiff = 0;
 
   onMount(() => {
     clock = new THREE.Clock();
@@ -108,7 +107,7 @@
     );
     tailLine.rotateX(Math.PI / 6);
 
-    const duckGroup = new THREE.Group();
+    duckGroup = new THREE.Group();
     duckGroup.add(bodyLine);
     duckGroup.add(headLine);
     duckGroup.add(rightFootLine);
@@ -122,16 +121,15 @@
 
       // put animation logic here
       const delta = clock.getDelta();
-      const rotationSpeed = 0.05; // Speed of rotation
+      const rotationSpeed = 1; // Speed of rotation
 
-      if (leftKeyDown && !rightKeyDown && headLine.rotation.y < Math.PI / 2) {
-        headLine.rotation.y += (1 + rotationSpeed) * delta;
+      if (leftKeyDown && !rightKeyDown) {
+        rotateLeft(rotationSpeed, delta);
       }
+
       if (rightKeyDown && !leftKeyDown && headLine.rotation.y > -Math.PI / 2) {
-        headLine.rotation.y -= (1 + rotationSpeed) * delta;
+        rotateRight(rotationSpeed, delta);
       }
-
-      angleDiff = headLine.rotation.y - bodyLine.rotation.y;
 
       renderer.render(scene, camera);
     };
@@ -149,6 +147,28 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
       }
     };
+
+    function rotateLeft(speed: number, delta: number) {
+      const rotationDelta = (1 + speed) * delta;
+      const newRotationY = headLine.rotation.y + rotationDelta;
+
+      if (newRotationY > Math.PI / 3) {
+        duckGroup.rotateY(rotationDelta);
+      } else {
+        headLine.rotateY(rotationDelta);
+      }
+    }
+
+    function rotateRight(speed: number, delta: number) {
+      const rotationDelta = (1 + speed) * delta;
+      const newRotationY = headLine.rotation.y - rotationDelta;
+
+      if (newRotationY < -Math.PI / 3) {
+        duckGroup.rotateY(-rotationDelta);
+      } else {
+        headLine.rotateY(-rotationDelta);
+      }
+    }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "ArrowUp") {
@@ -228,7 +248,6 @@
   style="width: 100vw; height: 100vh; overflow: hidden;"
 ></div>
 <div class="debug-container">
-  <div>angle head2body: {angleDiff}</div>
   <Keyboard
     isUpPressed={upKeyDown}
     isLeftPressed={leftKeyDown}
