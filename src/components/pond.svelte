@@ -23,13 +23,16 @@
 
   // Geometries and Materials (to dispose later)
   let lineMaterial: THREE.LineBasicMaterial;
-  let planeGeometry: THREE.PlaneGeometry;
-  let planeMaterial: THREE.MeshBasicMaterial;
+  let plane: THREE.Mesh;
+  let cube: THREE.Mesh;
 
   let upKeyDown = false;
   let leftKeyDown = false;
   let downKeyDown = false;
   let rightKeyDown = false;
+
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
 
   onMount(() => {
     clock = new THREE.Clock();
@@ -52,13 +55,8 @@
     canvasContainer.appendChild(renderer.domElement);
 
     // 5. Ground Plane
-    const {
-      mesh: plane,
-      geometry: planeGeo,
-      material: planeMat,
-    } = createPlane();
-    planeGeometry = planeGeo;
-    planeMaterial = planeMat;
+    plane = createPlane();
+    plane.name = "groundPlane";
     scene.add(plane);
 
     const fullLenght = new Float32Array([
@@ -83,22 +81,28 @@
       lineMaterial,
       new THREE.Vector3(0, 0.35, 0),
     );
+    bodyLine.name = "bodyLine";
+
     headLine = createLine(
       halfLength,
       lineMaterial,
       new THREE.Vector3(0, 0.55, -0.5),
     );
+    headLine.name = "headLine";
+
     rightFootLine = createLine(
       quarterLength,
       lineMaterial,
       new THREE.Vector3(0.125, 0, 0.25),
     );
+    rightFootLine.name = "rightFootLine";
 
     leftFootLine = createLine(
       quarterLength,
       lineMaterial,
       new THREE.Vector3(-0.125, 0, 0.25),
     );
+    leftFootLine.name = "leftFootLine";
 
     tailLine = createLine(
       quarterLength,
@@ -106,6 +110,7 @@
       new THREE.Vector3(0, 0.3, 0.5),
     );
     tailLine.rotateX(Math.PI / 6);
+    tailLine.name = "tailLine";
 
     duckGroup = new THREE.Group();
     duckGroup.add(bodyLine);
@@ -114,6 +119,12 @@
     duckGroup.add(leftFootLine);
     duckGroup.add(tailLine);
     scene.add(duckGroup);
+
+    const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+    const material = new THREE.MeshBasicMaterial({ color: "red" });
+    cube = new THREE.Mesh(geometry, material);
+
+    scene.add(cube);
 
     // 7. Animation Loop
     const animate = () => {
@@ -133,7 +144,6 @@
 
       renderer.render(scene, camera);
     };
-    animate();
 
     // Orbit control:
     new OrbitControls(camera, renderer.domElement);
@@ -200,15 +210,32 @@
       }
     };
 
+    const handleClick = (event: MouseEvent) => {
+      pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+      pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(pointer, camera);
+      const intersects = raycaster.intersectObject(plane);
+
+      if (intersects.length > 0) {
+        cube.position.copy(intersects[0].point);
+        cube.position.y = 0.05;
+      }
+    };
+
     window.addEventListener("resize", handleResize);
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("click", handleClick);
+
+    animate();
 
     return () => {
       console.log("Cleaning up Three.js scene...");
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("click", handleClick);
       window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(animationFrameId);
 
       bodyLine.geometry.dispose();
@@ -217,6 +244,19 @@
       leftFootLine.geometry.dispose();
       tailLine.geometry.dispose();
 
+      cube.geometry.dispose();
+      if (Array.isArray(cube.material)) {
+        cube.material.forEach((mat) => mat.dispose());
+      } else {
+        cube.material.dispose();
+      }
+
+      plane.geometry.dispose();
+      if (Array.isArray(plane.material)) {
+        plane.material.forEach((mat) => mat.dispose());
+      } else {
+        plane.material.dispose();
+      }
       lineMaterial.dispose();
 
       // Dispose of renderer and remove canvas
